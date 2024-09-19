@@ -1,2 +1,2 @@
 # ITAcademy
-En este repositorio cargaré los sprint de ITAcademy
+En este repositorio cargaré los sprints de ITAcademy
