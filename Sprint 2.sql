@@ -2,7 +2,7 @@
 
 -- Nivel 1
 
---  Ejercicio 1
+-- Ejercicio 1
 
 -- ✔️1) Muestra las principales características del esquema creado . 
 -- ✔️2) Explica las diferentes tablas y variables que existen. 
@@ -11,7 +11,6 @@
 SHOW TABLES;
 
 -- ✏️ Ahora muestro las características de cada tabla por separado:
-
 DESCRIBE company;
 DESCRIBE transaction;
 
@@ -23,9 +22,12 @@ DESCRIBE transaction;
 -- Para poder sacar los países de la tabla company, pero de solo aquellas compañias que esten en la tabla transaction:
 -- Hice el join relacionando las tablas por el id de la tabla company y company_id de la tabla de transacciones.
 
+
 SELECT DISTINCT company.country AS "Paises desde donde se realizan compras"
-FROM company JOIN transaction 
-ON company.id = transaction.company_id;
+FROM transactions.company 
+JOIN transactions.transaction 
+ON company.id = transaction.company_id
+WHERE transaction.declined = 0;
 
 -- 2) Desde cuántos países se realizan las compras?
 
@@ -33,65 +35,49 @@ ON company.id = transaction.company_id;
 
 SELECT COUNT(DISTINCT company.country) AS "Numero de paises desde donde se realizan compras"
 FROM company JOIN transaction 
-ON company.id = transaction.company_id;
+ON company.id = transaction.company_id
+WHERE transaction.declined = 0;
 
 -- 3) Identifica a la compañía con la mayor media de ventas:
 
 -- ✏️ Seleccion el nombre de la compañía de la tabla company y luego el monto de la tabla transaction sacandole el promedio al mismo tiempo
 -- ✏️ Hago JOIN, agrupo por el nombre de la compañía, lo ordeno descendiente para que me quede arriba el promedio mas alto y luego limito a 1
 
-SELECT company.company_name AS "Compañia con mayor media", AVG(transaction.amount) AS Media
+SELECT company.company_name AS "Compañia con mayor media", ROUND(AVG(transaction.amount),2) AS Media
 FROM company JOIN transaction
 ON company.id = transaction.company_id
+WHERE transaction.declined = 0
 GROUP BY company.company_name
 ORDER BY Media DESC
 LIMIT 1;
 
 -- Ejercicio 3: 
+
 -- Utilizando sólo subconsultas (sin utilizar JOIN):
 
--- 1) Muestra todas las transacciones realizadas por empresas de Alemania:
+-- 3.1) Muestra todas las transacciones realizadas por empresas de Alemania:
 
 -- ✏️Selecciono el id de las transacciones
 -- ✏️Relaciono las tablas por el company_id en transaction y el id en company y filtro por country "Germany"
 
-SELECT id AS TransaccionesAlemania, credit_card_id, company_id, user_id, lat, longitude, timestamp, amount, declined
+SELECT *
 FROM transaction
 WHERE company_id IN (SELECT id
 		     FROM company
 		     WHERE country = 'Germany');
                     
--- 2) Lista las empresas que han realizado transacciones por un amount superior a la media de todas las transacciones:
+-- 3.2) Lista las empresas que han realizado transacciones por un amount superior a la media de todas las transacciones:
 
--- Selecciono los valores únicos de la columna company_name de la tabla company
--- hago una subconsulta en el where para sacar las copañias que estén por encima de la media
--- En el having filtro para que la media del monto de las empresas que me muestre sean solo aquellas mayores al promedio general del amount
--- Anido otra subconsulta para calcular del valor de la media del amount
+-- Hice el SELECT DISTINCT para ver los valores únicos de company_name que cumplan con el filtro del WHERE.
+-- Usé una subconsulta en el WHERE para filtrar por las transacciones mayores a la media.
 
 SELECT DISTINCT company_name AS "Compañías sobre la media"
 FROM company
 WHERE id IN (SELECT company_id
 	     FROM transaction
-             GROUP BY company_id
-	     HAVING AVG(amount) >= (SELECT AVG(amount) FROM transaction))
-ORDER BY company_name ASC;
+             WHERE amount >= (SELECT AVG(amount) FROM transaction));
 
--- ⚠️COMPRUEBO:
--- ✏️Primero saco la media
-
-SELECT AVG(amount) FROM TRANSACTION; 
-
--- Aplico el mismo código pero directamente pongo el monto de la media
-
-SELECT DISTINCT company_name AS "Compañías sobre la media"
-FROM company
-WHERE id IN (SELECT company_id
-	     FROM transaction
-	     GROUP BY company_id
-	     HAVING AVG(amount) >= 256.735520)
-ORDER BY company_name ASC;
-
--- 3) Eliminarán del sistema las empresas que carecen de transacciones registradas, entrega el listado de estas empresas.
+-- 3.3) Eliminarán del sistema las empresas que carecen de transacciones registradas, entrega el listado de estas empresas.
 
 -- Selecciono los valores únicos de los nombres de las empresas de la tabla company
 -- Hago un filtro para sacar aquellas que no cumplan en la siguiente condición:
@@ -106,50 +92,45 @@ WHERE id NOT IN (SELECT company_id
 -- 👀 Observamos que no hay valores en la lista, por lo que pasamos a comprobar:
 
 -- Comprobamos que hay 100 diferentes compañias en la tabla company
-
 SELECT COUNT(DISTINCT company_name) AS "Compañías"
 FROM company;
 
 -- Comprobamos que hay 100 diferentes compaías en la tabla transaction
-
 SELECT COUNT(DISTINCT company_id) AS "Compañías"
 FROM transaction;
 
 -- Comprobamos que hay 87 compañias que sus operaciones han sido declinadas
-
 SELECT COUNT(DISTINCT company_id) AS "Compañías"
 FROM transaction
- WHERE declined = 1;
+WHERE declined = 1;
 
 -- Comprobamos que hay 100 compañias que sus operaciones no han sido declinadas
-
 SELECT COUNT(DISTINCT company_id) AS "Compañías"
 FROM transaction
  WHERE declined = 0;
 
--- ✓ La consulta no devuelve nombres de compañías porque todas tienen transacciones efectivas.
--- ✓ Se verificó que hay 100 nombres distintos en company y 100 nombres distintos en transaction con transacciones efectivas.
--- ✓ No hay empresas sin transacciones registradas. Alternativamente, se podría considerar eliminar empresas que no hayan realizado transacciones desde cierta fecha.
+-- La conclusión a la que llego es que la consulta no trae ningún nombre de compañía ya que todas las empresas cuentan con transacciones efectivas, eso lo comprobamos
+-- al verificar que hay 100 distintos nombres en la tabla company y 100 distintos nombres en con transacciones 0 (no declinadas/efectivas) en la tabla transaction
+-- por lo cual no hay empresas sin transacciones registradas. Se podría propoponer como alternativa eliminar aquellas empresas que desde cierta fecha no hayan 
+-- realizado transacciones.
 
 -- Nivel 2
 
 -- Ejercicio 1
 
 -- Identifica los cinco días que se generó la mayor cantidad de ingresos en la empresa por ventas. Muestra la fecha de cada transacción junto con el total de las ventas.
-
-SELECT DATE(timestamp) AS Fecha, COUNT(ID) AS NumVentas 
+SELECT DATE(timestamp) AS Fecha, COUNT(ID) AS NumVentas, SUM(amount) AS Monto
 FROM transaction
+WHERE declined = 0
 GROUP BY Fecha
-ORDER BY SUM(amount) DESC
+ORDER BY Monto DESC
 LIMIT 5;
 
 -- Ejercicio 2
 
 -- ¿Cuál es la media de ventas por país? Presenta los resultados ordenados de mayor a menor medio.
-
 -- ✏️Selección el COUNTRY de la tabla compaía, y seleccioné y al mismo tiempo saqué el promedio del AMOUNT de la tabla TRANSACTION.
 -- hice el JOIN, agrupé por paises y ordené de mayor a menor por el promedio.
-
 SELECT company.country AS Paises, AVG(transaction.amount) AS Promedio
 FROM company JOIN transaction
 ON company.id = transaction.company_id
@@ -160,30 +141,25 @@ ORDER BY Promedio DESC;
 
 -- En tu empresa, se plantea un nuevo proyecto para lanzar algunas campañas publicitarias para hacer competencia a la compañía “Non Institute”. 
 -- Para ello, te piden la lista de todas las transacciones realizadas por empresas que están ubicadas en el mismo país que esta compañía.
-
 -- 1) Muestra el listado aplicando JOIN y subconsultas.
 
--- ✏️Hice la seleccion de los datos de la tabla transaction
+-- Hice la seleccion de los datos de la tabla transaction
 -- Hice el JOIN y en el WHERE filtré por el country para que nos traiga los que coincidan con el country de 'Non Institute'
 
-SELECT transaction.id, transaction.credit_card_id, transaction.company_id, 
-transaction.user_id, transaction.lat, transaction.longitude, 
-transaction.timestamp, transaction.amount, transaction.declined
+SELECT transaction.*
 FROM transaction JOIN company
 ON company.id = transaction.company_id
 WHERE country = (SELECT country FROM company WHERE company_name = 'Non Institute'); 
 
 -- 2) Muestra el listado aplicando solo subconsultas.
-
-SELECT id, credit_card_id, company_id, user_id, lat, 
-longitude, timestamp, amount, declined
+SELECT *
 FROM transaction
 WHERE company_id IN (SELECT id 
-		    FROM company
-		    WHERE country = (SELECT country 
-				     FROM company 
-                                     WHERE company_name = 'Non Institute'));
-
+		     FROM company
+		     WHERE country = (SELECT country 
+				      FROM company
+	                              WHERE company_name = 'Non Institute'));
+                                    
 -- Nivel 3
 
 -- Ejercicio 1
@@ -200,7 +176,7 @@ FROM company
 WHERE id IN (SELECT company_id
 	     FROM transaction
              WHERE amount BETWEEN 100 AND 200 
-	     AND DATE(timestamp) IN ('2021/04/29', '2021/07/20', '2022/03/13'));
+             AND DATE(timestamp) IN ('2021/04/29', '2021/07/20', '2022/03/13'));
 
 -- Ejercicio 2
 
@@ -214,8 +190,8 @@ WHERE id IN (SELECT company_id
 -- Luego hice el JOIN de la dos tablas, agrupé por company_name y ordené por cantidad de transacciones de mayor a menor.
 
 SELECT company.company_name AS Compañías, COUNT(transaction.id) AS Cantidad,
-CASE WHEN COUNT(transaction.id) >= 4 THEN 'Mayor o igual a 4'
-ELSE 'Menos de 4' 
+CASE WHEN COUNT(transaction.id) > 4 THEN 'Mayor a 4'
+ELSE 'Menor o igual a 4' 
 END AS FranjaTransacciones
 FROM company JOIN transaction
 ON company.id = transaction.company_id
