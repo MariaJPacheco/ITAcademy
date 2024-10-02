@@ -41,7 +41,7 @@ WHERE t.declined = 0;
 
 -- 3) Identifica a la compañía con la mayor media de ventas:
 
--- ✏️ Seleccion el nombre de la compañía de la tabla company y luego el monto de la tabla transaction sacandole el promedio al mismo tiempo
+-- ✏️ Seleccioné el nombre de la compañía de la tabla company y luego el monto de la tabla transaction sacandole el promedio al mismo tiempo
 -- ✏️ Hago JOIN, agrupo por el nombre de la compañía, lo ordeno descendiente para que me quede arriba el promedio mas alto y luego limito a 1
 
 SELECT c.company_name AS "Compañia con mayor media", ROUND(AVG(t.amount),2) AS Media
